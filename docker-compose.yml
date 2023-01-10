@@ -1,0 +1,41 @@
+version: "3.9"
+services:
+  registry:
+    image: registry:2.8
+    container_name: registry-srv
+    restart: unless-stopped
+    environment:     
+      - REGISTRY_HTTP_HEADERS_X-Content-Type-Options=[nosniff]
+      - REGISTRY_HTTP_HEADERS_Access-Control-Allow-Origin=['http://192.168.56.60:8090']
+      - REGISTRY_HTTP_HEADERS_Access-Control-Allow-Methods=['HEAD', 'GET', 'OPTIONS', 'DELETE']
+      - REGISTRY_HTTP_HEADERS_Access-Control-Allow-Headers=['Authorization']
+      - REGISTRY_HTTP_HEADERS_Access-Control-Expose-Headers=['Docker-Content-Digest']
+      - REGISTRY_HTTP_HEADERS_Access-Control-Allow-Credentials=['true']
+      - REGISTRY_HTTP_ADDR=0.0.0.0:5001
+      - REGISTRY_STORAGE_DELETE_ENABLED=true
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./data:/var/lib/registry
+    networks:
+      - net-registry
+  
+  registry-ui:
+    image: joxit/docker-registry-ui:latest
+    container_name: registry-ui
+    restart: unless-stopped
+    depends_on:
+      - registry
+    environment:
+      # see issue https://github.com/Joxit/docker-registry-ui/issues/204
+      - NGINX_PROXY_PASS_URL=http://192.168.56.60:5001
+      - DELETE_IMAGES=true
+      - REGISTRY_TITLE=POSOS Private Docker Registry
+      - SINGLE_REGISTRY=true
+    ports:
+      - "8090:80"
+    networks:
+      - net-registry
+
+networks:
+  net-registry:
